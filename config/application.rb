@@ -18,5 +18,7 @@ module Project
     config.encoding = "utf-8"
 
     config.assets.paths << "#{Rails.root}/app/assets/fonts"
+    config.assets.paths << "#{Rails.root}/app/assets/music"
+
   end
 end
