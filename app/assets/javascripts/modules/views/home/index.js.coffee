@@ -5,13 +5,23 @@ module.exports = class Home
   context: null
   window: null
   list: null
+  panner:null
 
   constructor:->
     @window = $ window;
 
     @list = $ 'section.home ul'
 
-    @_get_audio_context()
+    @context = new AudioContext()
+    @s = @context.createBufferSource()
+    @g = @context.createGain()
+    @p = @context.createPanner()
+    @p.panningModel = 'equalpower';
+    @s.connect(@g)
+    @g.connect(@p)
+    @p.connect(@context.destination)
+
+    #@_get_audio_context()
     @_init()
 
   _init:()->
@@ -37,7 +47,6 @@ module.exports = class Home
     request.responseType = "arraybuffer"
 
     request.onload = @_on_sound_loaded
-    console.log request
 
     request.send()
 
@@ -52,12 +61,22 @@ module.exports = class Home
     return
 
   _play_sound:(buffer)=>
-    source = @context.createBufferSource()
-    source.buffer = buffer
-    source.connect @context.destination
-    source.start 0
 
-    console.log '_play_sound'
+    #@s.buffer = buffer;
+    #@g.gain.value = 2;
+    #@s.noteOn(0)
+
+    # source = @context.createBufferSource()
+    # source.buffer = buffer
+    # source.connect @context.destination
+    # source.start 0
+
+    @s.buffer = buffer
+    #@s.connect @context.destination
+
+    @s.start 0
+
+    @panner = new SoundPan @p
 
   _on_error:()=>
     console.log 'error'
