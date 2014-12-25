@@ -1,0 +1,110 @@
+module.exports = class Webgl
+
+  dom:null
+  window: null
+  scene:null
+  camera:null
+  renderer:null
+
+  geometry:null
+  material:null
+  plane:null
+  sprite:null
+  materials:null
+
+  constructor:->
+    @window = $ window
+    @dom = $ 'section.webgl'
+
+    @sprite = THREE.ImageUtils.loadTexture( "<%= asset_path('particle.png') %>" );
+
+    @scene = new THREE.Scene()
+    @camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, .1, 1000 )
+
+    @renderer = new THREE.WebGLRenderer()
+    @renderer.setSize( window.innerWidth, window.innerHeight )
+
+    @dom.append( @renderer.domElement )
+
+    #@camera.position.set(0,0,0);
+    #@camera.lookAt(@scene.position);
+
+    @_add_plane()
+    @_render()
+
+  _add_plane:()->
+    @geometry = new THREE.PlaneGeometry( 20, 20, 20, 20 );
+    @material = new THREE.MeshBasicMaterial( {wireframe:true} );
+    @plane = new THREE.Mesh( @geometry, @material );
+
+    # create the particle variables
+    @particleCount = @geometry.vertices.length
+    @particles = new THREE.Geometry()
+    @pMaterial = new THREE.PointCloudMaterial(
+      color: 0xffffff
+      size: 6
+      map: THREE.ImageUtils.loadTexture("<%= asset_path('particle.png') %>")
+      blending: THREE.AdditiveBlending
+      transparent: true
+    )
+
+    # now create the individual particles
+    p = 0
+
+    while p < @particleCount
+
+      # create a particle with random
+      # position values, -250 -> 250
+      pX = Math.random() * 500 - 250
+      pY = Math.random() * 500 - 250
+      pZ = Math.random() * 500 - 250
+      particle = new THREE.Vector3(pX, pY, pZ)
+
+      # create a velocity vector
+      # x
+      # y
+      particle.velocity = new THREE.Vector3(0, -Math.random(), 0) # z
+
+      # add it to the geometry
+      @particles.vertices.push particle
+      p++
+
+    # create the particle system
+    @particleSystem = new THREE.PointCloud(@particles, @pMaterial)
+    #particleSystem.sortParticles = true
+
+    # add it to the scene
+    @scene.add @particleSystem
+    @camera.position.z = 100;
+
+
+  _render:()=>
+
+    # add some rotation to the system
+    #@particleSystem.rotation.y += 0.01
+    pCount = @particleCount
+    while pCount--
+
+      # get the particle
+      particle = @particles.vertices[pCount]
+
+      # check if we need to reset
+      if particle.y < -200
+        particle.y = 200
+        particle.velocity.y = 0
+
+      # update the velocity
+      particle.velocity.y -= Math.random() * .1
+
+      # and the position
+      particle.add particle.velocity
+
+    # flag to the particle system that we've
+    # changed its vertices. This is the
+    # dirty little secret.
+    @particleSystem.geometry.__dirtyVertices = true
+
+    @particles.verticesNeedUpdate = true;
+
+    requestAnimationFrame( @_render )
+    @renderer.render( @scene, @camera )
